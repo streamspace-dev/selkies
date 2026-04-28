@@ -250,7 +250,11 @@ jobs:
     - get_semver
     - core_images
     - component_images
-    - example_images
+    # streamspace fork: example_images dropped from upload_artifacts gates.
+    # gst-py-example pulls its base from the upstream selkies-project ghcr
+    # namespace which doesn't have our fork's gstreamer image, and no
+    # upload_artifacts entry consumes any gst-py-example output. Letting
+    # example_images fail without blocking the release.
     runs-on: ubuntu-latest
     if: ${{ github.event_name != 'pull_request' }}
     env:
@@ -410,7 +414,8 @@ jobs:
     - get_semver
     - core_images
     - component_images
-    - example_images
+    # streamspace fork: example_images dropped from create_release gates
+    # for the same reason as upload_artifacts (above).
     - upload_artifacts
     runs-on: ubuntu-latest
     if: ${{ github.event_name != 'pull_request' }}
