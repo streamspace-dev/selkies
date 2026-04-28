@@ -86,6 +86,10 @@ jobs:
     # limit on a full GStreamer compile (per upstream issue #50).
     runs-on: ${{ matrix.runner || 'ubuntu-latest' }}
     strategy:
+      # streamspace fork: don't cancel the multi-hour native arm64 GStreamer
+      # compiles when an unrelated matrix entry (e.g. coturn-web bitrot) fails.
+      # A transient single-entry failure used to nuke a 2-hour run.
+      fail-fast: false
       matrix:
         include:
         - name: conda
