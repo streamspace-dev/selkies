@@ -92,14 +92,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - name: conda
-          build_args: |
-            PACKAGE_VERSION=${{ needs.get_semver.outputs.semver_pep440 }}
-            PKG_VERSION=${{ needs.get_semver.outputs.semver }}
-            PY_BUILD_IMAGE=ghcr.io/${{ github.repository }}/py-build:${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}
-            WEB_IMAGE=ghcr.io/${{ github.repository }}/gst-web:${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}
-          context: addons/conda
-
+        # streamspace fork: `conda` matrix entry dropped — conda's package
+        # version regex disallows hyphens (CondaBuildUserError on
+        # "1.6.2-streamspace.1"), and we don't ship the conda artifact.
+        # Adding a third version-scheme derivation just for conda isn't worth it.
         - name: coturn
           context: addons/coturn
           platforms: linux/amd64,linux/arm64
@@ -108,12 +104,10 @@ jobs:
           context: addons/coturn-web
           platforms: linux/amd64,linux/arm64
 
-        - name: gstreamer
-          version_suffix: -ubuntu20.04
-          build_args: |
-            DISTRIB_RELEASE=20.04
-          context: addons/gstreamer
-
+        # streamspace fork: ubuntu20.04 dropped from gstreamer matrix.
+        # Ubuntu 20.04 LTS hit standard-support EOL in April 2025 and
+        # cargo-c's curl-sys dep now requires OpenSSL >=3.0 which 20.04
+        # doesn't ship. Selkies-base targets 24.04, so 20.04 was scope.
         - name: gstreamer
           version_suffix: -ubuntu22.04
           build_args: |
@@ -127,14 +121,6 @@ jobs:
           context: addons/gstreamer
 
         # streamspace fork: arm64 GStreamer builds on native runners
-        - name: gstreamer
-          version_suffix: -ubuntu20.04-arm64
-          build_args: |
-            DISTRIB_RELEASE=20.04
-          context: addons/gstreamer
-          runner: ubuntu-24.04-arm
-          platforms: linux/arm64
-
         - name: gstreamer
           version_suffix: -ubuntu22.04-arm64
           build_args: |
@@ -216,18 +202,8 @@ jobs:
     strategy:
       matrix:
         include:
-        - name: gst-py-example
-          version_suffix: -ubuntu20.04
-          build_args: |
-            PACKAGE_VERSION=${{ needs.get_semver.outputs.semver_pep440 }}
-            DISTRIB_RELEASE=20.04
-            GSTREAMER_BASE_IMAGE_RELEASE=${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}
-            PY_BUILD_IMAGE=ghcr.io/${{ github.repository }}/py-build:${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}
-            WEB_IMAGE=ghcr.io/${{ github.repository }}/gst-web:${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}
-            JS_BASE_IMAGE_RELEASE=${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}
-            JS_BASE_IMAGE=ghcr.io/${{ github.repository }}/js-interposer
-          context: addons/example
-
+        # streamspace fork: gst-py-example-ubuntu20.04 dropped — depends on
+        # the gstreamer-ubuntu20.04 base which is no longer built.
         - name: gst-py-example
           version_suffix: -ubuntu22.04
           build_args: |
@@ -282,18 +258,11 @@ jobs:
     strategy:
       matrix:
         include:
-        - name: conda
-          source: /opt/selkies-gstreamer-conda.tar.gz
-          target: selkies-gstreamer-portable-${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}_amd64.tar.gz
-
+        # streamspace fork: conda + ubuntu20.04 artifact uploads dropped to
+        # match the trimmed component_images matrix above.
         - name: gst-web
           source: /opt/gst-web.tar.gz
           target: selkies-gstreamer-web_${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}.tar.gz
-
-        - name: gstreamer
-          version_suffix: -ubuntu20.04
-          source: /opt/selkies-gstreamer-latest.tar.gz
-          target: gstreamer-selkies_gpl_${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}_ubuntu20.04_amd64.tar.gz
 
         - name: gstreamer
           version_suffix: -ubuntu22.04
@@ -306,12 +275,6 @@ jobs:
           target: gstreamer-selkies_gpl_${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}_ubuntu24.04_amd64.tar.gz
 
         # streamspace fork: arm64 GStreamer artifact uploads
-        - name: gstreamer
-          version_suffix: -ubuntu20.04-arm64
-          source: /opt/selkies-gstreamer-latest.tar.gz
-          target: gstreamer-selkies_gpl_${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}_ubuntu20.04_arm64.tar.gz
-          platforms: linux/arm64
-
         - name: gstreamer
           version_suffix: -ubuntu22.04-arm64
           source: /opt/selkies-gstreamer-latest.tar.gz
