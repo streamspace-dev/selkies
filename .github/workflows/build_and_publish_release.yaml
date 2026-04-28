@@ -260,6 +260,10 @@ jobs:
     env:
       TMPDIR: /tmp
     strategy:
+      # streamspace fork: don't cancel sibling uploads when a single matrix
+      # entry fails. Releasing a partial set of artifacts is better than
+      # cancelling them all over one entry's hiccup.
+      fail-fast: false
       matrix:
         include:
         # streamspace fork: conda + ubuntu20.04 artifact uploads dropped to
@@ -369,9 +373,11 @@ jobs:
           target: selkies-js-interposer_${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}_ubuntu24.04_arm64.tar.gz
           platforms: linux/arm64
 
-        - name: py-build
-          source: /opt/pypi/dist/selkies_gstreamer-${{ needs.get_semver.outputs.semver }}-py3-none-any.whl
-          target: selkies_gstreamer-${{ needs.get_semver.outputs.semver }}-py3-none-any.whl
+        # streamspace fork: py-build wheel upload dropped. Path uses `semver`
+        # (1.6.2-streamspace.1) but the wheel is built with `semver_pep440`
+        # (1.6.2+streamspace.1) so the docker cp can't find the file. The
+        # py-build wheel isn't a published release asset — it's only used
+        # internally by conda/example_images, both of which the fork drops.
 
     name: ${{ matrix.name }}${{ matrix.version_suffix }}${{ matrix.suffix }}_${{ matrix.platforms || 'linux/amd64' }} release artifact extraction & upload
     steps:
