@@ -70,7 +70,11 @@ jobs:
     needs:
     - get_semver
     - core_images
-    runs-on: ubuntu-latest
+    # streamspace fork: matrix-aware runner so arm64 GStreamer can use
+    # native arm64 hardware (ubuntu-24.04-arm) instead of QEMU emulation.
+    # QEMU is 7-8x slower than native and exceeds the 6-hour Actions
+    # limit on a full GStreamer compile (per upstream issue #50).
+    runs-on: ${{ matrix.runner || 'ubuntu-latest' }}
     strategy:
       matrix:
         include:
@@ -107,6 +111,31 @@ jobs:
           build_args: |
             DISTRIB_RELEASE=24.04
           context: addons/gstreamer
+
+        # streamspace fork: arm64 GStreamer builds on native runners
+        - name: gstreamer
+          version_suffix: -ubuntu20.04-arm64
+          build_args: |
+            DISTRIB_RELEASE=20.04
+          context: addons/gstreamer
+          runner: ubuntu-24.04-arm
+          platforms: linux/arm64
+
+        - name: gstreamer
+          version_suffix: -ubuntu22.04-arm64
+          build_args: |
+            DISTRIB_RELEASE=22.04
+          context: addons/gstreamer
+          runner: ubuntu-24.04-arm
+          platforms: linux/arm64
+
+        - name: gstreamer
+          version_suffix: -ubuntu24.04-arm64
+          build_args: |
+            DISTRIB_RELEASE=24.04
+          context: addons/gstreamer
+          runner: ubuntu-24.04-arm
+          platforms: linux/arm64
 
         - name: js-interposer
           version_suffix: -ubuntu20.04
@@ -261,6 +290,25 @@ jobs:
           version_suffix: -ubuntu24.04
           source: /opt/selkies-gstreamer-latest.tar.gz
           target: gstreamer-selkies_gpl_${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}_ubuntu24.04_amd64.tar.gz
+
+        # streamspace fork: arm64 GStreamer artifact uploads
+        - name: gstreamer
+          version_suffix: -ubuntu20.04-arm64
+          source: /opt/selkies-gstreamer-latest.tar.gz
+          target: gstreamer-selkies_gpl_${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}_ubuntu20.04_arm64.tar.gz
+          platforms: linux/arm64
+
+        - name: gstreamer
+          version_suffix: -ubuntu22.04-arm64
+          source: /opt/selkies-gstreamer-latest.tar.gz
+          target: gstreamer-selkies_gpl_${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}_ubuntu22.04_arm64.tar.gz
+          platforms: linux/arm64
+
+        - name: gstreamer
+          version_suffix: -ubuntu24.04-arm64
+          source: /opt/selkies-gstreamer-latest.tar.gz
+          target: gstreamer-selkies_gpl_${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}_ubuntu24.04_arm64.tar.gz
+          platforms: linux/arm64
 
         - name: js-interposer
           version_suffix: -ubuntu20.04
