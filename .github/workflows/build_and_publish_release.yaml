@@ -18,17 +18,27 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       semver: ${{ steps.semver.outputs.semver }}
+      semver_pep440: ${{ steps.semver.outputs.semver_pep440 }}
     steps:
     - id: semver
       env:
         RELEASE_VERSION: ${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}
       run: |
         if [[ "${RELEASE_VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
-          echo "semver=${RELEASE_VERSION/v/}" >> "$GITHUB_OUTPUT"
+          SEMVER="${RELEASE_VERSION/v/}"
+          echo "semver=${SEMVER}" >> "$GITHUB_OUTPUT"
+          # streamspace fork: derive a PEP 440-compliant variant for py-build.
+          # Python's packaging lib rejects "1.6.2-streamspace.1" because PEP 440
+          # uses "+" (not "-") as the local-version separator. Convert the first
+          # hyphen so the wheel version becomes "1.6.2+streamspace.1". Tags and
+          # artifact filenames continue to use the "-" form for readability.
+          SEMVER_PEP440="${SEMVER/-/+}"
+          echo "semver_pep440=${SEMVER_PEP440}" >> "$GITHUB_OUTPUT"
         else
           # If ref name does not match semver, default to 0.0.0
           # This happens when running from a branch such as main
           echo "semver=0.0.0" >> "$GITHUB_OUTPUT"
+          echo "semver_pep440=0.0.0" >> "$GITHUB_OUTPUT"
           # Exit with an error because releases from branches should not be made
           exit 1
         fi
@@ -45,7 +55,7 @@ jobs:
 
         - name: py-build
           build_args: |
-            PACKAGE_VERSION=${{ needs.get_semver.outputs.semver }}
+            PACKAGE_VERSION=${{ needs.get_semver.outputs.semver_pep440 }}
           context: .
 
     name: ${{ matrix.name }}${{ matrix.version_suffix }} image build & publish
@@ -80,7 +90,7 @@ jobs:
         include:
         - name: conda
           build_args: |
-            PACKAGE_VERSION=${{ needs.get_semver.outputs.semver }}
+            PACKAGE_VERSION=${{ needs.get_semver.outputs.semver_pep440 }}
             PKG_VERSION=${{ needs.get_semver.outputs.semver }}
             PY_BUILD_IMAGE=ghcr.io/${{ github.repository }}/py-build:${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}
             WEB_IMAGE=ghcr.io/${{ github.repository }}/gst-web:${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}
@@ -205,7 +215,7 @@ jobs:
         - name: gst-py-example
           version_suffix: -ubuntu20.04
           build_args: |
-            PACKAGE_VERSION=${{ needs.get_semver.outputs.semver }}
+            PACKAGE_VERSION=${{ needs.get_semver.outputs.semver_pep440 }}
             DISTRIB_RELEASE=20.04
             GSTREAMER_BASE_IMAGE_RELEASE=${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}
             PY_BUILD_IMAGE=ghcr.io/${{ github.repository }}/py-build:${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}
@@ -217,7 +227,7 @@ jobs:
         - name: gst-py-example
           version_suffix: -ubuntu22.04
           build_args: |
-            PACKAGE_VERSION=${{ needs.get_semver.outputs.semver }}
+            PACKAGE_VERSION=${{ needs.get_semver.outputs.semver_pep440 }}
             DISTRIB_RELEASE=22.04
             GSTREAMER_BASE_IMAGE_RELEASE=${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}
             PY_BUILD_IMAGE=ghcr.io/${{ github.repository }}/py-build:${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}
@@ -229,7 +239,7 @@ jobs:
         - name: gst-py-example
           version_suffix: -ubuntu24.04
           build_args: |
-            PACKAGE_VERSION=${{ needs.get_semver.outputs.semver }}
+            PACKAGE_VERSION=${{ needs.get_semver.outputs.semver_pep440 }}
             DISTRIB_RELEASE=24.04
             GSTREAMER_BASE_IMAGE_RELEASE=${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}
             PY_BUILD_IMAGE=ghcr.io/${{ github.repository }}/py-build:${{ github.event_name != 'pull_request' && github.event.inputs.tag || 'main' }}
